@@ -1,10 +1,12 @@
-version: '3.8'
 services:
     bot:
         build: .
         restart: always
         stop_signal: SIGINT
-        network_mode: host
+        #network_mode: host
+        networks:
+            - app
+            - proxy
         environment:
             BOT_TOKEN: ${BOT_TOKEN}
             SHOP_NAME: ${SHOP_NAME}
@@ -28,23 +30,32 @@ services:
             PANEL_GLOBAL: ${PANEL_GLOBAL}
             PANEL_USER: ${PANEL_USER}
             PANEL_PASS: ${PANEL_PASS}
-            WEBHOOK_URL: ${WEBHOOK_URL}
+            WEBHOOK_URL: https://${BACKEND_DOMAIN}
             WEBHOOK_PORT: ${WEBHOOK_PORT}
             RENEW_NOTIFICATION_TIME: ${RENEW_NOTIFICATION_TIME}
             TG_INFO_CHANEL: ${TG_INFO_CHANEL}
             STARS_PAYMENT_ENABLED: ${STARS_PAYMENT_ENABLED}
             EXPIRED_NOTIFICATION_TIME: ${EXPIRED_NOTIFICATION_TIME}
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${BACKEND_DOMAIN}`)"
+            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=websecure"
+            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt"
+            - "traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=${WEBHOOK_PORT}"
         volumes:
             - "./goods.json:/app/goods.json"
             - "./locales:/app/locales"
         depends_on:
             db:
                 condition: service_healthy
+
     db:
         image: mariadb:lts
         restart: always
+        networks:
+            - app
         ports:
-          - ${DB_PORT}:3306
+            - 127.0.0.1:${DB_PORT}:3306
         environment:
             MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
             MARIADB_DATABASE: ${DB_NAME}
@@ -60,4 +71,11 @@ services:
             timeout: 5s
             retries: 3
 volumes:
-  mysql-data:
+    mysql-data:
+
+networks:
+    app:
+        driver: bridge
+    proxy:
+        external: true
+        name: proxy

@@ -1,11 +1,12 @@
 import { Request, Router } from 'express';
 import ipaddr from 'ipaddr.js';
+import { Telegraf } from 'telegraf';
 
 import { BotDependencies } from '../bot/dependencies.js';
 import { BotContext } from '../bot/types.js';
-import { Telegraf } from 'telegraf';
 import { verifyCryptomusWebhook } from '../utils/cryptomus.js';
 import { getMainMenuKeyboard } from '../bot/keyboards/index.js';
+import { phrases } from '../bot/phrases.js';
 
 const CRYPTOMUS_ALLOWED_IPS = ['91.227.144.54'];
 
@@ -83,12 +84,7 @@ export const createPaymentRouter = (deps: BotDependencies, bot: Telegraf<BotCont
         const infoLink = deps.config.infoChannel ?? deps.config.supportLink ?? deps.config.rulesLink ?? '';
         await bot.telegram.sendMessage(
           payment.chatId,
-          translate(
-            'Thank you for choice ??\n?\n<a href="{link}">Subscribe</a> so you don\'t miss any announcements ?\n?\nYour subscription is purchased and available in the "My subscription ??" section.',
-            {
-              link: infoLink
-            }
-          ),
+          translate(phrases.thankYou, { link: infoLink }),
           {
             parse_mode: 'HTML',
             ...getMainMenuKeyboard(translate, {
@@ -135,12 +131,7 @@ export const createPaymentRouter = (deps: BotDependencies, bot: Telegraf<BotCont
         const infoLink = deps.config.infoChannel ?? deps.config.supportLink ?? deps.config.rulesLink ?? '';
         await bot.telegram.sendMessage(
           payment.chatId,
-          translate(
-            'Thank you for choice ??\n?\n<a href="{link}">Subscribe</a> so you don\'t miss any announcements ?\n?\nYour subscription is purchased and available in the "My subscription ??" section.',
-            {
-              link: infoLink
-            }
-          ),
+          translate(phrases.thankYou, { link: infoLink }),
           {
             parse_mode: 'HTML',
             ...getMainMenuKeyboard(translate, {

@@ -1,6 +1,7 @@
 import { BotContext } from '../types.js';
 import { BotDependencies } from '../dependencies.js';
 import { getMainMenuKeyboard } from '../keyboards/index.js';
+import { phrases } from '../phrases.js';
 
 export const showMainMenu = async (ctx: BotContext, deps: BotDependencies) => {
   if (!ctx.from) {
@@ -8,7 +9,7 @@ export const showMainMenu = async (ctx: BotContext, deps: BotDependencies) => {
   }
   const translate = ctx.state.translator ?? deps.i18n.getTranslator(ctx.from.language_code);
   const hadTest = await deps.vpnUsersRepository.hasTestSubscription(ctx.from.id);
-  const message = translate('Hello, {name} ????\n\nSelect an action ??', {
+  const message = translate(phrases.mainMenuGreeting, {
     name: ctx.from.first_name ?? ''
   });
   await ctx.reply(message, getMainMenuKeyboard(translate, {

@@ -1,6 +1,7 @@
 import { Markup } from 'telegraf';
 
 import { TranslateFn } from '../../services/i18nService.js';
+import { phrases } from '../phrases.js';
 
 interface MainMenuOptions {
   trialExpired: boolean;
@@ -11,20 +12,19 @@ export const getMainMenuKeyboard = (translate: TranslateFn, options: MainMenuOpt
   const rows: string[][] = [];
 
   if (!options.trialExpired && options.testPeriodEnabled) {
-    rows.push([translate('5 days free ??')]);
+    rows.push([translate(phrases.freeButton)]);
   }
 
-  const joinRow = [translate('Join ???????')];
-  rows.push(joinRow);
+  rows.push([translate(phrases.joinButton)]);
 
   const infoRow: string[] = [];
   if (options.trialExpired) {
-    infoRow.push(translate('My subscription ??'));
+    infoRow.push(translate(phrases.subscriptionButton));
   }
-  infoRow.push(translate('Frequent questions ??'));
+  infoRow.push(translate(phrases.faqButton));
   rows.push(infoRow);
 
-  rows.push([translate('Support ??')]);
+  rows.push([translate(phrases.supportButton)]);
 
   return Markup.keyboard(rows.map((row) => row.map((label) => Markup.button.text(label))))
     .resize()

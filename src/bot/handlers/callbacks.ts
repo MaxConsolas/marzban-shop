@@ -7,6 +7,7 @@ import {
   getPaymentKeyboard,
   getXtrPayKeyboard
 } from '../keyboards/index.js';
+import { phrases } from '../phrases.js';
 
 const getChatId = (ctx: BotContext): number | undefined => ctx.chat?.id ?? ctx.from?.id;
 
@@ -39,7 +40,7 @@ export const registerCallbacks = (bot: Telegraf<BotContext>, deps: BotDependenci
 
     await ctx.deleteMessage().catch(() => undefined);
     await ctx.reply(
-      translate('To be paid - {amount}? ??', { amount: Math.round(link.amount) }),
+      translate(phrases.toBePaidRuble, { amount: Math.round(link.amount) }),
       getPayKeyboard(translate, link.url)
     );
     await ctx.answerCbQuery();
@@ -72,7 +73,7 @@ export const registerCallbacks = (bot: Telegraf<BotContext>, deps: BotDependenci
 
     await ctx.deleteMessage().catch(() => undefined);
     await ctx.reply(
-      translate('To be paid - {amount}$ ??', { amount: link.amount }),
+      translate(phrases.toBePaidDollar, { amount: link.amount }),
       getPayKeyboard(translate, link.url)
     );
     await ctx.answerCbQuery();
@@ -95,27 +96,25 @@ export const registerCallbacks = (bot: Telegraf<BotContext>, deps: BotDependenci
     }
     const translate = ctx.state.translator ?? deps.i18n.getTranslator(ctx.from.language_code);
     await ctx.deleteMessage().catch(() => undefined);
-    await ctx.replyWithInvoice({
-      title: translate('Subscription for {amount} month', { amount: good.months }),
-      description: translate('To be paid - {amount}?? ??', { amount: good.price.stars }),
-      payload: good.callback,
-      provider_token: '',
-      currency: 'XTR',
-      prices: [{ label: 'XTR', amount: good.price.stars }],
-      reply_markup: getXtrPayKeyboard(translate).reply_markup
-    });
+    await ctx.replyWithInvoice(
+      {
+        title: translate(phrases.subscriptionForMonths, { amount: good.months }),
+        description: translate(phrases.toBePaidStars, { amount: good.price.stars }),
+        payload: good.callback,
+        provider_token: '',
+        currency: 'XTR',
+        prices: [{ label: 'XTR', amount: good.price.stars }]
+      },
+      {
+        reply_markup: getXtrPayKeyboard(translate)
+      }
+    );
     await ctx.answerCbQuery();
   });
 
-  bot.action((ctx) => {
-    const data = ctx.callbackQuery?.data;
-    if (!data) {
-      return false;
-    }
-    return Boolean(deps.goodsService.getByCallback(data));
-  }, async (ctx) => {
-    const data = ctx.callbackQuery?.data;
-    if (!data) {
+  bot.action(/^.+$/, async (ctx) => {
+    const data = ctx.match?.[0] ?? ('data' in ctx.callbackQuery ? ctx.callbackQuery.data ?? '' : '');
+    if (!data || data.startsWith('pay_')) {
       await ctx.answerCbQuery();
       return;
     }
@@ -127,7 +126,7 @@ export const registerCallbacks = (bot: Telegraf<BotContext>, deps: BotDependenci
     const translate = ctx.state.translator ?? deps.i18n.getTranslator(ctx.from?.language_code);
     await ctx.deleteMessage().catch(() => undefined);
     await ctx.reply(
-      translate('Select payment method ??'),
+      translate(phrases.selectPaymentMethod),
       getPaymentKeyboard({
         translate,
         good,

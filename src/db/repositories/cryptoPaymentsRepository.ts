@@ -1,4 +1,4 @@
-import { PoolConnection } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { pool } from '../pool.js';
 import { CryptomusPaymentRow } from '../types.js';
@@ -12,6 +12,8 @@ export interface CryptomusPayment {
   chatId: number;
   callback: string;
 }
+
+type CryptomusPaymentRowResult = CryptomusPaymentRow & RowDataPacket;
 
 const mapRow = (row: CryptomusPaymentRow): CryptomusPayment => ({
   id: row.id,
@@ -28,10 +30,10 @@ export class CryptoPaymentsRepository {
     return pool.getConnection();
   }
 
-  async create(payment: Omit<CryptomusPayment, 'id'>): Promise<void> {
+  async create(payment: Omit<CryptomusPayment, 'id' | 'paymentUuid'> & { paymentUuid: string }): Promise<void> {
     const connection = await this.fetchConnection();
     try {
-      await connection.query(
+      await connection.execute<ResultSetHeader>(
         'INSERT INTO crypto_payments (tg_id, lang, payment_uuid, order_id, chat_id, callback) VALUES (?, ?, ?, ?, ?, ?)',
         [payment.telegramId, payment.language, payment.paymentUuid, payment.orderId, payment.chatId, payment.callback]
       );
@@ -43,7 +45,7 @@ export class CryptoPaymentsRepository {
   async findByOrderId(orderId: string): Promise<CryptomusPayment | null> {
     const connection = await this.fetchConnection();
     try {
-      const [rows] = await connection.query<CryptomusPaymentRow[]>(
+      const [rows] = await connection.execute<CryptomusPaymentRowResult[]>(
         'SELECT * FROM crypto_payments WHERE order_id = ? LIMIT 1',
         [orderId]
       );
@@ -59,7 +61,10 @@ export class CryptoPaymentsRepository {
   async deleteByPaymentUuid(paymentUuid: string): Promise<void> {
     const connection = await this.fetchConnection();
     try {
-      await connection.query('DELETE FROM crypto_payments WHERE payment_uuid = ?', [paymentUuid]);
+      await connection.execute<ResultSetHeader>(
+        'DELETE FROM crypto_payments WHERE payment_uuid = ?',
+        [paymentUuid]
+      );
     } finally {
       connection.release();
     }

@@ -5,6 +5,7 @@ import { AppConfig } from '../../config/env.js';
 import { Good } from '../goodsService.js';
 import { YookassaPaymentsRepository } from '../../db/repositories/yookassaPaymentsRepository.js';
 import { PaymentLink } from './types.js';
+import { yookassaDescriptions } from '../../bot/phrases.js';
 
 interface CreateYookassaPaymentParams {
   telegramId: number;
@@ -29,6 +30,8 @@ export class YookassaService {
 
     const { shopId, secretKey, email } = this.config.yookassa;
     const idempotenceKey = randomUUID();
+    const subscriptionDescription = `${yookassaDescriptions.subscriptionTitle}${this.config.shopName}`;
+    const itemDescription = yookassaDescriptions.subscriptionItem.replace('{months}', String(params.good.months));
     const payload = {
       amount: {
         value: params.good.price.ru.toFixed(2),
@@ -39,7 +42,7 @@ export class YookassaService {
         return_url: `https://t.me/${params.botUsername}`
       },
       capture: true,
-      description: `???????? ?? VPN ${this.config.shopName}`,
+      description: subscriptionDescription,
       save_payment_method: false,
       receipt: {
         customer: {
@@ -47,7 +50,7 @@ export class YookassaService {
         },
         items: [
           {
-            description: `???????? ?? VPN ??????: ???-?? ??????? - ${params.good.months}`,
+            description: itemDescription,
             quantity: '1',
             amount: {
               value: params.good.price.ru.toFixed(2),

@@ -1,4 +1,4 @@
-import { PoolConnection } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { pool } from '../pool.js';
 import { YookassaPaymentRow } from '../types.js';
@@ -11,6 +11,8 @@ export interface YookassaPayment {
   chatId: number;
   callback: string;
 }
+
+type YookassaPaymentRowResult = YookassaPaymentRow & RowDataPacket;
 
 const mapRow = (row: YookassaPaymentRow): YookassaPayment => ({
   id: row.id,
@@ -29,7 +31,7 @@ export class YookassaPaymentsRepository {
   async create(payment: Omit<YookassaPayment, 'id'>): Promise<void> {
     const connection = await this.fetchConnection();
     try {
-      await connection.query(
+      await connection.execute<ResultSetHeader>(
         'INSERT INTO yookassa_payments (tg_id, lang, payment_id, chat_id, callback) VALUES (?, ?, ?, ?, ?)',
         [payment.telegramId, payment.language, payment.paymentId, payment.chatId, payment.callback]
       );
@@ -41,7 +43,7 @@ export class YookassaPaymentsRepository {
   async findByPaymentId(paymentId: string): Promise<YookassaPayment | null> {
     const connection = await this.fetchConnection();
     try {
-      const [rows] = await connection.query<YookassaPaymentRow[]>(
+      const [rows] = await connection.execute<YookassaPaymentRowResult[]>(
         'SELECT * FROM yookassa_payments WHERE payment_id = ? LIMIT 1',
         [paymentId]
       );
@@ -57,7 +59,10 @@ export class YookassaPaymentsRepository {
   async deleteByPaymentId(paymentId: string): Promise<void> {
     const connection = await this.fetchConnection();
     try {
-      await connection.query('DELETE FROM yookassa_payments WHERE payment_id = ?', [paymentId]);
+      await connection.execute<ResultSetHeader>(
+        'DELETE FROM yookassa_payments WHERE payment_id = ?',
+        [paymentId]
+      );
     } finally {
       connection.release();
     }

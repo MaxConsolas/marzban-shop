@@ -1,4 +1,4 @@
-import { PoolConnection } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { pool } from '../pool.js';
 import { VPNUserRow } from '../types.js';
@@ -10,6 +10,8 @@ export interface VPNUser {
   vpnId: string;
   test: boolean;
 }
+
+type VPNUserRowResult = VPNUserRow & RowDataPacket;
 
 const mapRow = (row: VPNUserRow): VPNUser => ({
   id: row.id,
@@ -26,7 +28,7 @@ export class VpnUsersRepository {
   async ensureProfile(telegramId: number): Promise<VPNUser> {
     const connection = await this.fetchConnection();
     try {
-      const [rows] = await connection.query<VPNUserRow[]>(
+      const [rows] = await connection.execute<VPNUserRowResult[]>(
         'SELECT * FROM vpnusers WHERE tg_id = ? LIMIT 1',
         [telegramId]
       );
@@ -36,7 +38,7 @@ export class VpnUsersRepository {
       }
 
       const vpnId = md5(String(telegramId));
-      const [result] = await connection.query<{ insertId: number }>(
+      const [result] = await connection.execute<ResultSetHeader>(
         'INSERT INTO vpnusers (tg_id, vpn_id, test) VALUES (?, ?, ?)',
         [telegramId, vpnId, false]
       );
@@ -55,7 +57,7 @@ export class VpnUsersRepository {
   async findByTelegramId(telegramId: number): Promise<VPNUser | null> {
     const connection = await this.fetchConnection();
     try {
-      const [rows] = await connection.query<VPNUserRow[]>(
+      const [rows] = await connection.execute<VPNUserRowResult[]>(
         'SELECT * FROM vpnusers WHERE tg_id = ? LIMIT 1',
         [telegramId]
       );
@@ -71,7 +73,7 @@ export class VpnUsersRepository {
   async findByVpnId(vpnId: string): Promise<VPNUser | null> {
     const connection = await this.fetchConnection();
     try {
-      const [rows] = await connection.query<VPNUserRow[]>(
+      const [rows] = await connection.execute<VPNUserRowResult[]>(
         'SELECT * FROM vpnusers WHERE vpn_id = ? LIMIT 1',
         [vpnId]
       );
@@ -92,7 +94,10 @@ export class VpnUsersRepository {
   async markTestSubscriptionUsed(telegramId: number): Promise<void> {
     const connection = await this.fetchConnection();
     try {
-      await connection.query('UPDATE vpnusers SET test = ? WHERE tg_id = ?', [true, telegramId]);
+      await connection.execute<ResultSetHeader>(
+        'UPDATE vpnusers SET test = ? WHERE tg_id = ?',
+        [true, telegramId]
+      );
     } finally {
       connection.release();
     }

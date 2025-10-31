@@ -2,6 +2,7 @@ import { Markup } from 'telegraf';
 
 import { Good } from '../../services/goodsService.js';
 import { TranslateFn } from '../../services/i18nService.js';
+import { phrases } from '../phrases.js';
 
 interface PaymentKeyboardOptions {
   good: Good;
@@ -17,7 +18,7 @@ export const getPaymentKeyboard = (options: PaymentKeyboardOptions) => {
   if (options.yookassaEnabled) {
     rows.push([
       Markup.button.callback(
-        options.translate('?????? (???, ??????) - ?'),
+        options.translate(phrases.yookassaButton),
         `pay_kassa_${options.good.callback}`
       )
     ]);
@@ -25,13 +26,13 @@ export const getPaymentKeyboard = (options: PaymentKeyboardOptions) => {
 
   if (options.cryptomusEnabled) {
     rows.push([
-      Markup.button.callback('???????????? - $', `pay_crypto_${options.good.callback}`)
+      Markup.button.callback(phrases.cryptoButton, `pay_crypto_${options.good.callback}`)
     ]);
   }
 
   if (options.starsEnabled) {
     rows.push([
-      Markup.button.callback('Telegram ??', `pay_stars_${options.good.callback}`)
+      Markup.button.callback(phrases.telegramStarsButton, `pay_stars_${options.good.callback}`)
     ]);
   }
 

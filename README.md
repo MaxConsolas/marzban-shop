@@ -1,6 +1,6 @@
 # Marzban Shop
 
-It is a Telegram bot shop powered by aiogram that provides VPN sales via Telegram
+Telegram bot shop powered by modern TypeScript and [Telegraf](https://telegraf.js.org/) that automates VPN subscription sales directly inside Telegram.
 This project is a fork. [Original project](https://github.com/gunsh1p/marzban-shop).
 
 ## Table of Contents
@@ -24,6 +24,7 @@ This project is a fork. [Original project](https://github.com/gunsh1p/marzban-sh
 ### Dependencies
 
 - [Docker](https://www.docker.com/)
+- [Node.js 20+](https://nodejs.org/) (for local development/builds)
 
 ### Installation guide
 

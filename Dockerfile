@@ -1,6 +1,16 @@
-FROM python:3.10-slim-bullseye
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY requirements.txt requirements.txt
-RUN ["pip", "install", "-r", "requirements.txt"]
-COPY bot /app
-ENTRYPOINT ["bash", "-c", "pybabel compile -d locales -D bot; alembic upgrade head; python main.py"]
+COPY package.json tsconfig.json ./
+RUN npm install
+COPY src ./src
+COPY locales ./locales
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json ./
+RUN npm install --omit=dev
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/locales ./locales
+CMD ["node", "dist/index.js"]

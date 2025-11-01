@@ -3,6 +3,7 @@ import { Telegraf } from 'telegraf';
 import { BotDependencies } from '../bot/dependencies.js';
 import { BotContext } from '../bot/types.js';
 import { Logger } from '../logger.js';
+import { phrases } from '../bot/phrases.js';
 
 const ONE_DAY = 60 * 60 * 24;
 
@@ -31,7 +32,7 @@ export const notifyUsersAboutExpiredSubscription = async (
         }
         const chatMember = await bot.telegram.getChatMember(vpnUser.telegramId, vpnUser.telegramId);
         const translate = deps.i18n.getTranslator(chatMember.user.language_code ?? undefined);
-        const message = translate('message_notify_expired_sub', {
+        const message = translate(phrases.notifyExpiredSub, {
           name: chatMember.user.first_name ?? ''
         });
         await bot.telegram.sendMessage(vpnUser.telegramId, message);

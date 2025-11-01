@@ -43,7 +43,7 @@ export const emoji = {
   wave: '\u{1F44B}\u{1F3FB}',
   downArrow: '\u{2B07}\u{FE0F}',
   surfer: '\u{1F3C4}\u{1F3FB}\u{200D}\u{2642}\u{FE0F}',
-  free: '\u{1F13B}',
+  free: '\u{1F193}',
   profile: '\u{1F464}',
   info: '\u{2139}\u{FE0F}',
   heart: '\u{2764}\u{FE0F}',
@@ -51,7 +51,8 @@ export const emoji = {
   hug: '\u{1F917}',
   check: '\u{2705}',
   star: '\u{2B50}\u{FE0F}',
-  ruble: '\u{20BD}'
+  ruble: '\u{20BD}',
+  sad: '\u{1F622}'
 } as const;
 
 export const phrases = {
@@ -69,6 +70,7 @@ export const phrases = {
   subscriptionAvailable: `Your subscription is available in the "My subscription ${emoji.profile}" section.`,
   thankYou: `Thank you for choice ${emoji.heart}\n\u{FE0F}\n<a href="{link}">Subscribe</a> so you don't miss any announcements ${emoji.check}\n\u{FE0F}\nYour subscription is purchased and available in the "My subscription ${emoji.profile}" section.`,
   renewReminder: `Hello, {name} ${emoji.wave}\n\nThank you for using our service ${emoji.heart}\n\u{FE0F}\nYour VPN subscription expires {day}, at the end of the day.\n\u{FE0F}\nTo renew it, just go to the "Join ${emoji.surfer}" section and make a payment.`,
+  notifyExpiredSub: `Hello, {name} ${emoji.wave}\n\nWe noticed that you did not renew your subscription ${emoji.sad}\n\nIf you have any comments or questions about the entire service, please write. Your opinion is important to us!`,
   toBePaidRuble: `To be paid - {amount}${emoji.ruble} ${emoji.downArrow}`,
   toBePaidDollar: `To be paid - {amount}$ ${emoji.downArrow}`,
   toBePaidStars: `To be paid - {amount}${emoji.star} ${emoji.downArrow}`,

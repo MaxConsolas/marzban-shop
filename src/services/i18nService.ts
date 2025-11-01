@@ -1,5 +1,3 @@
-import Gettext from 'node-gettext';
-import { po as poParser } from 'gettext-parser';
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 
@@ -8,96 +6,89 @@ import { logger } from '../logger.js';
 
 export type TranslateFn = (phrase: string, values?: TemplateValues) => string;
 
+type LocaleData = Record<string, string>;
+
 export class I18nService {
-  private gt = new Gettext();
-  private localesDir = resolve(process.cwd(), 'locales');
-  private domain = 'bot';
-  private fallback = 'en';
-  private loadedLocales = new Set<string>();
-  private cacheTimestamp: number | null = null;
+  private readonly localesDir = resolve(process.cwd(), 'locales');
+  private readonly fallback = 'en';
+  private readonly translations = new Map<string, LocaleData>();
+  private readonly timestamps = new Map<string, number>();
 
   constructor() {
-    this.reload();
+    this.loadLocales();
+    if (!this.translations.has(this.fallback)) {
+      this.translations.set(this.fallback, {});
+    }
   }
 
-  private readLocaleDirectories(): string[] {
+  private loadLocales(): void {
     if (!existsSync(this.localesDir)) {
       logger.warn({ localesDir: this.localesDir }, 'Locales directory is missing');
-      return [];
-    }
-    return readdirSync(this.localesDir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name);
-  }
-
-  private loadLocale(locale: string): void {
-    const poPath = join(this.localesDir, locale, 'LC_MESSAGES', `${this.domain}.po`);
-    if (!existsSync(poPath)) {
-      logger.warn({ locale, poPath }, 'Translation file not found');
-      return;
-    }
-    const raw = readFileSync(poPath);
-    const parsed = poParser.parse(raw);
-    this.gt.addTranslations(locale, this.domain, parsed);
-    this.loadedLocales.add(locale);
-  }
-
-  private reload(): void {
-    const directories = this.readLocaleDirectories();
-    let newestTimestamp = 0;
-    for (const locale of directories) {
-      const poPath = join(this.localesDir, locale, 'LC_MESSAGES', `${this.domain}.po`);
-      if (!existsSync(poPath)) {
-        continue;
-      }
-      const stats = statSync(poPath);
-      newestTimestamp = Math.max(newestTimestamp, stats.mtimeMs);
-    }
-
-    if (this.cacheTimestamp && newestTimestamp <= this.cacheTimestamp) {
       return;
     }
 
-    this.gt = new Gettext();
-    this.loadedLocales.clear();
-    for (const locale of directories) {
+    const entries = readdirSync(this.localesDir, { withFileTypes: true });
+    const jsonFiles = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.json'));
+    const seenLocales = new Set<string>();
+
+    for (const file of jsonFiles) {
+      const locale = file.name.replace(/\.json$/i, '').toLowerCase();
+      const filePath = join(this.localesDir, file.name);
+
       try {
-        this.loadLocale(locale);
+        const stats = statSync(filePath);
+        if (this.timestamps.get(locale) === stats.mtimeMs) {
+          seenLocales.add(locale);
+          continue;
+        }
+
+        const raw = readFileSync(filePath, 'utf-8');
+        const parsed = JSON.parse(raw) as LocaleData;
+        this.translations.set(locale, parsed);
+        this.timestamps.set(locale, stats.mtimeMs);
+        seenLocales.add(locale);
       } catch (error) {
+        this.translations.delete(locale);
+        this.timestamps.delete(locale);
         logger.error({ error, locale }, 'Failed to load locale');
       }
     }
 
-    if (!this.loadedLocales.has(this.fallback)) {
-      // Ensure fallback exists even if directory missing.
-      this.gt.addTranslations(this.fallback, this.domain, { translations: { '': {} } });
-      this.loadedLocales.add(this.fallback);
+    for (const locale of [...this.translations.keys()]) {
+      if (locale === this.fallback) {
+        continue;
+      }
+      if (!seenLocales.has(locale)) {
+        this.translations.delete(locale);
+        this.timestamps.delete(locale);
+      }
     }
-    this.cacheTimestamp = newestTimestamp;
+
+    if (!this.translations.has(this.fallback)) {
+      this.translations.set(this.fallback, {});
+    }
   }
 
-  private resolveLocale(locale?: string): string {
+  private normalizeLocale(locale?: string): string {
     if (!locale) {
       return this.fallback;
     }
-    const normalized = locale.toLowerCase().split('-')[0];
-    if (this.loadedLocales.has(normalized)) {
-      return normalized;
-    }
-    return this.fallback;
+    const normalized = locale.toLowerCase().split(/[-_]/)[0];
+    return this.translations.has(normalized) ? normalized : this.fallback;
   }
 
   translate(phrase: string, locale?: string, values?: TemplateValues): string {
-    this.reload();
-    const resolved = this.resolveLocale(locale);
-    this.gt.setLocale(resolved);
-    this.gt.textdomain(this.domain);
-    const translated = this.gt.gettext(phrase);
-    return formatTemplate(translated, values);
+    this.loadLocales();
+    const normalized = this.normalizeLocale(locale);
+    const translation =
+      this.translations.get(normalized)?.[phrase] ??
+      this.translations.get(this.fallback)?.[phrase] ??
+      phrase;
+
+    return formatTemplate(translation, values);
   }
 
   getTranslator(locale?: string): TranslateFn {
-    const resolved = this.resolveLocale(locale);
-    return (phrase, values) => this.translate(phrase, resolved, values);
+    return (phrase, values) => this.translate(phrase, locale, values);
   }
 }

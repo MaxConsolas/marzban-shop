@@ -56,7 +56,7 @@ export const emoji = {
 
 export const phrases = {
   mainMenuGreeting: `Hello, {name} ${emoji.wave}\n\nSelect an action ${emoji.downArrow}`,
-  joinButton: `Join ${emoji.surfer}`,
+  joinButton: `Join${emoji.surfer}`,
   supportButton: `Support ${emoji.heart}`,
   freeButton: `5 days free ${emoji.free}`,
   subscriptionButton: `My subscription ${emoji.profile}`,
